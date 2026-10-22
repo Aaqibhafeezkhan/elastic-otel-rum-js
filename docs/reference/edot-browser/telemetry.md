@@ -27,7 +27,7 @@ Ensure your reverse proxy and OTLP endpoint accept the `/v1/metrics` path.
 
 ### Known limitations of browser-side metrics [metrics-limitations]
 
-- Metrics are collected in the user’s browser and represent a single session or page. There is no server-side aggregation, each export batch reflects one client’s view.
+- Metrics are collected in the user’s browser and represent a single session or page. There is no server-side aggregation, so each export batch reflects one client’s view.
 - Browsers have limited resources. High-cardinality or high-frequency metrics can affect performance and export payload size. Use caution with unbounded attributes (for example user IDs, dynamic URLs) on metrics.
 - Metrics are only sent when the SDK exports (for example on an interval or when the page is unloaded). Temporary or single-page sessions might produce few data points.
 - Browser environments vary (device, network, extensions). Metric values might be noisier or less consistent than server-side metrics.
@@ -36,7 +36,7 @@ Ensure your reverse proxy and OTLP endpoint accept the `/v1/metrics` path.
 
 ### Context Manager [traces-context-manager]
 
-In certain scenarios, a trace might occur asynchronously. For instance, a user interaction that initiates an HTTP request to a downstream service and subsequently updates the User Interface with the service response. To maintain context across these asynchronous functions, EDOT incorporates a ContextManager that patches several asynchronous browser APIs, including:
+In certain scenarios, a trace might occur asynchronously. For instance, a user interaction that initiates an HTTP request to a downstream service and subsequently updates the user interface with the service response. To maintain context across these asynchronous functions, EDOT incorporates a ContextManager that patches several asynchronous browser APIs, including:
 
 - setTimeout
 - Promise methods: then, catch, and finally
@@ -102,6 +102,26 @@ In addition, your application can emit its own records:
 :::{note}
 Automatic capture of `console` methods (for example `console.log`, `console.error`) is not provided by EDOT Browser. To send application logs to {{product.observability}}, use the OpenTelemetry Logs API from your application code. Automatic console instrumentation might be considered in the future.
 :::
+
+## Sessions [sessions]
+
+EDOT Browser groups telemetry from the same user into sessions. Spans and log records include these attributes:
+
+- `session.id`: a random UUID shared by all tabs and windows of the application. It survives page reloads.
+- `session.previous_id`: the `session.id` of the session that ended right before the current one, when it started less than 24 hours ago.
+- `browser.tab.id`: a random UUID for the current tab or window. It survives page reloads within the same tab. This attribute is not part of the OpenTelemetry semantic conventions yet.
+
+A `session.start` log record is emitted every time a new session starts.
+
+A session ends after a period without telemetry (30 minutes by default) or when it reaches its maximum duration (4 hours by default). Refer to [session details](configuration.md#otel_browser_session-details) to change these values.
+
+Session attributes are not added to metrics to avoid high-cardinality attributes.
+
+### Known limitations of sessions [sessions-limitations]
+
+- Sessions are stored in `localStorage` and tab identifiers in `sessionStorage`. If web storage is not available (for example storage is blocked for the site), EDOT Browser does not add session attributes, since they would not persist across page reloads.
+- Duplicating a tab copies its `sessionStorage`, so the duplicated tab reports the same `browser.tab.id` as the original one.
+- Any telemetry, including background requests, counts as activity and extends the session.
 
 ## Next steps [next-steps]
 
