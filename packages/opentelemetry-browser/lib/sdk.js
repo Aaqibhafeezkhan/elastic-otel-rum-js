@@ -250,9 +250,7 @@ export function startBrowserSdk(cfg = {}) {
     });
     metrics.setGlobalMeterProvider(meterProvider);
 
-    // Resgister instrumentations. The `registerInstrumentations` enabled all of them
-    // regardless of the configuration so EDOT only add the ones that are not disabled
-    // by configuration
+    // Create instrumentations with their per-instrumentation configuration.
     /** @type {Record<keyof InstrumentationsConfigMap, (cfg: any) => any>} */
     const instrFactories = {
         navigation: (cfg) => new NavigationInstrumentation(cfg),
