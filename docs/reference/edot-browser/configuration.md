@@ -72,7 +72,8 @@ Configuration is passed as an object to `startBrowserSdk`. The following options
 | `logLevel` | `"none" \| "error" \| "warn" \| "info" \| "debug" \| "verbose" \| "all"` | Diagnostic log level for the SDK internal logger. Defaults to `info`. Values are lowercase; the SDK accepts them case-insensitively. |
 | `resourceAttributes`  | `Record<string, any>`    | Optional resource attributes to attach to telemetry. For example: `{ 'deployment.environment.name': 'production' }`. |
 | `disabled`            | `boolean`                | If `true`, the SDK does not start. |
-| `disableInstrumentations` | `Array<string>` | Instrumentation keys to keep disabled. For example, `['xhr']`. |\n| `instrumentations`    | `Record<string, Object>` | Per-instrumentation configuration. The legacy `{ enabled: false }` setting is deprecated; use `disableInstrumentations` instead. Refer to [instrumentations details](#otel_browser_instrumentations-details) for more information. |
+| `disableInstrumentations` | `Array<string>` | Instrumentation keys to keep disabled. For example, `['xhr']`. |
+| `instrumentations`    | `Record<string, Object>` | Per-instrumentation configuration. The legacy `{ enabled: false }` setting is deprecated; use `disableInstrumentations` instead. Refer to [instrumentations details](#otel_browser_instrumentations-details) for more information. |
 | `session`             | `{ sampleRate?: number; inactivityTimeout?: number; maxDuration?: number }` | Session tracking and session-level sampling. Refer to [session details](#otel_browser_session-details) for more information. |
 | `exportConfig`    | `{ url?: string; headers?: Record<string, string>}` | Configuration for exporters of the different signals. |
 | `exportConfig.url`    | `string` | Base URL of the OTLP export endpoint (reverse proxy). Do not include signal paths such as `/v1/traces`. Defaults to `http://localhost:4318`. |
