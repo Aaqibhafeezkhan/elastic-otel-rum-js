@@ -72,7 +72,8 @@ Configuration is passed as an object to `startBrowserSdk`. The following options
 | `logLevel` | `"none" \| "error" \| "warn" \| "info" \| "debug" \| "verbose" \| "all"` | Diagnostic log level for the SDK internal logger. Defaults to `info`. Values are lowercase; the SDK accepts them case-insensitively. |
 | `resourceAttributes`  | `Record<string, any>`    | Optional resource attributes to attach to telemetry. For example: `{ 'deployment.environment.name': 'production' }`. |
 | `disabled`            | `boolean`                | If `true`, the SDK does not start. |
-| `instrumentations`    | `Record<string, Object>` | Per-instrumentation config. Set `{ enabled: false }` for a key to turn off that instrumentation. Refer to [instrumentations details](#otel_browser_instrumentations-details) for more information. |
+| `instrumentations`    | `Record<string, Object>` | Per-instrumentation configuration. Refer to [instrumentations details](#otel_browser_instrumentations-details) for more information. |
+| `disableInstrumentations` | `Array<string>` | List of instrumentation keys to disable. Defaults to an empty array. |
 | `session`             | `{ sampleRate?: number; inactivityTimeout?: number; maxDuration?: number }` | Session tracking and session-level sampling. Refer to [session details](#otel_browser_session-details) for more information. |
 | `exportConfig`    | `{ url?: string; headers?: Record<string, string>}` | Configuration for exporters of the different signals. |
 | `exportConfig.url`    | `string` | Base URL of the OTLP export endpoint (reverse proxy). Do not include signal paths such as `/v1/traces`. Defaults to `http://localhost:4318`. |
@@ -116,6 +117,10 @@ This section provides additional details about configuration settings that requi
 ### `instrumentations` details [otel_browser_instrumentations-details]
 
 An object whose keys are the configuration keys of the available instrumentations in EDOT and whose values are the corresponding configuration objects. The scope name is the instrumentation identifier attached to exported telemetry.
+
+Use the top-level `disableInstrumentations` option to disable one or more instrumentations by key. Supported keys are `navigation`, `navigation-timing`, `resource-timing`, `fetch`, `user-action`, `xhr`, `errors`, and `web-vitals`.
+
+The per-instrumentation `enabled` option is deprecated. Existing `instrumentations[key].enabled` configurations continue to work temporarily and emit a diagnostic warning; replace `enabled: false` with the corresponding key in `disableInstrumentations`.
 
 The following keys are supported:
 

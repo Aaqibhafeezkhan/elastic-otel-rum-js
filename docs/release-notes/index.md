@@ -36,6 +36,8 @@ To check for security updates, go to [Security announcements for the Elastic sta
 
 ### Features and enhancements [edot-browser-X.X.X-features-enhancements]
 
+* Add the top-level `disableInstrumentations` option to selectively disable browser instrumentations. The previous per-instrumentation `enabled` option remains temporarily supported with a deprecation warning. Ref: https://github.com/elastic/elastic-otel-rum-js/issues/134
+
 * Align configuration with the upstream [browser-sdk](https://github.com/open-telemetry/opentelemetry-browser/tree/main/packages/sdk).
 * Add session tracking. Spans and log records include `session.id`, `session.previous_id`, and `browser.tab.id` attributes. A `session.start` event is emitted when a session starts.
   Ref: https://github.com/elastic/elastic-otel-rum-js/issues/115

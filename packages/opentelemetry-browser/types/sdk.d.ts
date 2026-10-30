@@ -8,14 +8,14 @@ export function startBrowserSdk(cfg?: BrowserSdkConfiguration): {
     shutdown: () => Promise<void>;
 };
 export type InstrumentationsConfigMap = {
-    "navigation": import("@opentelemetry/browser-instrumentation/experimental/navigation").NavigationInstrumentationConfig;
-    "navigation-timing": import("@opentelemetry/browser-instrumentation/experimental/navigation-timing").NavigationTimingInstrumentationConfig;
-    "resource-timing": import("@opentelemetry/browser-instrumentation/experimental/resource-timing").ResourceTimingInstrumentationConfig;
-    "fetch": import("@opentelemetry/browser-instrumentation/experimental/fetch").FetchInstrumentationConfig;
-    "user-action": import("@opentelemetry/browser-instrumentation/experimental/user-action").UserActionInstrumentationConfig;
-    "xhr": import("@opentelemetry/browser-instrumentation/experimental/xhr").XhrInstrumentationConfig;
-    "errors": import("@opentelemetry/browser-instrumentation/experimental/errors").ErrorsInstrumentationConfig;
-    "web-vitals": import("@opentelemetry/browser-instrumentation/experimental/web-vitals").WebVitalsInstrumentationConfig;
+    "navigation": import("@opentelemetry/browser-instrumentation/experimental/navigation").NavigationInstrumentationConfig & { enabled?: boolean | undefined; };
+    "navigation-timing": import("@opentelemetry/browser-instrumentation/experimental/navigation-timing").NavigationTimingInstrumentationConfig & { enabled?: boolean | undefined; };
+    "resource-timing": import("@opentelemetry/browser-instrumentation/experimental/resource-timing").ResourceTimingInstrumentationConfig & { enabled?: boolean | undefined; };
+    "fetch": import("@opentelemetry/browser-instrumentation/experimental/fetch").FetchInstrumentationConfig & { enabled?: boolean | undefined; };
+    "user-action": import("@opentelemetry/browser-instrumentation/experimental/user-action").UserActionInstrumentationConfig & { enabled?: boolean | undefined; };
+    "xhr": import("@opentelemetry/browser-instrumentation/experimental/xhr").XhrInstrumentationConfig & { enabled?: boolean | undefined; };
+    "errors": import("@opentelemetry/browser-instrumentation/experimental/errors").ErrorsInstrumentationConfig & { enabled?: boolean | undefined; };
+    "web-vitals": import("@opentelemetry/browser-instrumentation/experimental/web-vitals").WebVitalsInstrumentationConfig & { enabled?: boolean | undefined; };
 };
 /**
  * Configuration that is defined in upstream SDK
@@ -36,6 +36,7 @@ export type SdkConfig = {
  */
 export type EdotConfig = {
     instrumentations?: Partial<InstrumentationsConfigMap> | undefined;
+    disableInstrumentations?: (keyof InstrumentationsConfigMap)[] | undefined;
     session?: import("./session.js").SessionConfig | undefined;
 };
 export type BrowserSdkConfiguration = SdkConfig & EdotConfig;

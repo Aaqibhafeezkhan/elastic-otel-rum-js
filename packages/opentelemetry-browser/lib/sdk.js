@@ -45,14 +45,14 @@ import {EDOT_VERSION} from './version.js';
 
 /**
  * @typedef {{
- *  "navigation": import('@opentelemetry/browser-instrumentation/experimental/navigation').NavigationInstrumentationConfig;
- *  "navigation-timing": import('@opentelemetry/browser-instrumentation/experimental/navigation-timing').NavigationTimingInstrumentationConfig;
- *  "resource-timing": import('@opentelemetry/browser-instrumentation/experimental/resource-timing').ResourceTimingInstrumentationConfig;
- *  "fetch": import('@opentelemetry/browser-instrumentation/experimental/fetch').FetchInstrumentationConfig;
- *  "user-action": import('@opentelemetry/browser-instrumentation/experimental/user-action').UserActionInstrumentationConfig;
- *  "xhr": import('@opentelemetry/browser-instrumentation/experimental/xhr').XhrInstrumentationConfig;
- *  "errors": import('@opentelemetry/browser-instrumentation/experimental/errors').ErrorsInstrumentationConfig;
- *  "web-vitals": import('@opentelemetry/browser-instrumentation/experimental/web-vitals').WebVitalsInstrumentationConfig;
+ *  "navigation": import('@opentelemetry/browser-instrumentation/experimental/navigation').NavigationInstrumentationConfig & {enabled?: boolean};
+ *  "navigation-timing": import('@opentelemetry/browser-instrumentation/experimental/navigation-timing').NavigationTimingInstrumentationConfig & {enabled?: boolean};
+ *  "resource-timing": import('@opentelemetry/browser-instrumentation/experimental/resource-timing').ResourceTimingInstrumentationConfig & {enabled?: boolean};
+ *  "fetch": import('@opentelemetry/browser-instrumentation/experimental/fetch').FetchInstrumentationConfig & {enabled?: boolean};
+ *  "user-action": import('@opentelemetry/browser-instrumentation/experimental/user-action').UserActionInstrumentationConfig & {enabled?: boolean};
+ *  "xhr": import('@opentelemetry/browser-instrumentation/experimental/xhr').XhrInstrumentationConfig & {enabled?: boolean};
+ *  "errors": import('@opentelemetry/browser-instrumentation/experimental/errors').ErrorsInstrumentationConfig & {enabled?: boolean};
+ *  "web-vitals": import('@opentelemetry/browser-instrumentation/experimental/web-vitals').WebVitalsInstrumentationConfig & {enabled?: boolean};
  * }} InstrumentationsConfigMap
  */
 
@@ -71,6 +71,7 @@ import {EDOT_VERSION} from './version.js';
  * Configuration properties that are only in EDOT
  * @typedef {Object} EdotConfig
  * @property {Partial<InstrumentationsConfigMap>} [instrumentations]
+ * @property {Array<keyof InstrumentationsConfigMap>} [disableInstrumentations]
  * @property {import('./session.js').SessionConfig} [session]
  */
 /**
@@ -119,6 +120,26 @@ export function startBrowserSdk(cfg = {}) {
 
     const {serviceName, serviceVersion} = cfg;
     const config = {...defaultConfig, ...cfg};
+
+    // Keep the previous per-instrumentation option working during its deprecation
+    // period.
+    /** @type {Set<string>} */
+    const legacyDisabledInstrumentations = new Set();
+    for (const [name, instrumentationConfig] of Object.entries(
+        config.instrumentations ?? {}
+    )) {
+        if (
+            instrumentationConfig &&
+            Object.hasOwn(instrumentationConfig, 'enabled')
+        ) {
+            diag.warn(
+                `The "instrumentations.${name}.enabled" option is deprecated and will be removed in a future release. Use "disableInstrumentations: ['${name}']" instead.`
+            );
+            if (instrumentationConfig.enabled === false) {
+                legacyDisabledInstrumentations.add(name);
+            }
+        }
+    }
 
     // Input validation
     /** @type {URL} */
@@ -266,22 +287,20 @@ export function startBrowserSdk(cfg = {}) {
     const instrKeys = Object.keys(instrFactories);
 
     // Create all instrumentations
+    const disabledInstrumentations = new Set([
+        ...(config.disableInstrumentations ?? []),
+        ...legacyDisabledInstrumentations,
+    ]);
     /** @type {Array<import('@opentelemetry/instrumentation').Instrumentation>} */
-    const instrumentationInstances = instrKeys.map((key) => {
-        const config = instrumentations[key];
-        return instrFactories[key](config);
-    });
-    // register them (which enables all performing any required patching)
+    const instrumentationInstances = instrKeys
+        .filter((key) => !disabledInstrumentations.has(key))
+        .map((key) => {
+            const instrumentationConfig = instrumentations[key];
+            return instrFactories[key](instrumentationConfig);
+        });
+    // Register only enabled instrumentations; registration enables each instance.
     const disableInstrumentations = registerInstrumentations({
         instrumentations: instrumentationInstances,
-    });
-
-    // Disable the ones with { enabled: false } in configuration
-    instrumentationInstances.forEach((instr) => {
-        const config = instr.getConfig();
-        if (config.enabled === false) {
-            instr.disable();
-        }
     });
 
     // Resolve the session eagerly so `session.start` is emitted on load

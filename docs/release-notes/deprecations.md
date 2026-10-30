@@ -30,4 +30,13 @@ Review the deprecated functionality for {{edot}} Browser. While deprecations hav
 % ::::
 % TEMPLATE END
 
-No deprecations.
+## Next version [edot-browser-X.X.X-deprecations]
+
+::::{dropdown} Per-instrumentation `enabled` configuration
+The `instrumentations[key].enabled` option is deprecated. Use the top-level `disableInstrumentations` array to disable instrumentations instead. Existing configurations continue to work temporarily and emit a diagnostic warning.
+
+**Impact**<br> The per-instrumentation `enabled` option will be removed in a future release.
+
+**Action**<br> Replace `instrumentations[key].enabled: false` with the instrumentation key in `disableInstrumentations`.
+View [issue #134](https://github.com/elastic/elastic-otel-rum-js/issues/134).
+::::
