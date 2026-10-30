@@ -56,6 +56,10 @@ import {EDOT_VERSION} from './version.js';
  */
 
 /**
+ * @typedef {Partial<{[K in keyof InstrumentationsConfigMap]: InstrumentationsConfigMap[K] & {enabled?: boolean}}>} InstrumentationsConfig
+ */
+
+/**
  * Configuration that is defined in upstream SDK
  * @typedef {Object} SdkConfig
  * @property {boolean} [disabled]
@@ -69,7 +73,7 @@ import {EDOT_VERSION} from './version.js';
 /**
  * Configuration properties that are only in EDOT
  * @typedef {Object} EdotConfig
- * @property {Partial<InstrumentationsConfigMap>} [instrumentations]
+ * @property {InstrumentationsConfig} [instrumentations]
  * @property {Array<keyof InstrumentationsConfigMap>} [disableInstrumentations]
  * @property {import('./session.js').SessionConfig} [session]
  */
