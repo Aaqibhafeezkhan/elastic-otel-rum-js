@@ -36,6 +36,7 @@ export type SdkConfig = {
  */
 export type EdotConfig = {
     instrumentations?: Partial<InstrumentationsConfigMap> | undefined;
+    disableInstrumentations?: (keyof InstrumentationsConfigMap)[] | undefined;
     session?: import("./session.js").SessionConfig | undefined;
 };
 export type BrowserSdkConfiguration = SdkConfig & EdotConfig;
