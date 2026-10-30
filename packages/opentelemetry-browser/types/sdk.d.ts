@@ -20,6 +20,14 @@ export type InstrumentationsConfigMap = {
 /**
  * Configuration that is defined in upstream SDK
  */
+export type InstrumentationsConfig = Partial<{
+    [K in keyof InstrumentationsConfigMap]: InstrumentationsConfigMap[K] & {
+        enabled?: boolean | undefined;
+    };
+}>;
+/**
+ * Configuration that is defined in upstream SDK
+ */
 export type SdkConfig = {
     disabled?: boolean | undefined;
     logLevel?: "warn" | "none" | "error" | "info" | "debug" | "verbose" | "all" | undefined;
@@ -35,7 +43,7 @@ export type SdkConfig = {
  * Configuration properties that are only in EDOT
  */
 export type EdotConfig = {
-    instrumentations?: Partial<InstrumentationsConfigMap> | undefined;
+    instrumentations?: InstrumentationsConfig | undefined;
     disableInstrumentations?: (keyof InstrumentationsConfigMap)[] | undefined;
     session?: import("./session.js").SessionConfig | undefined;
 };
