@@ -29,3 +29,25 @@ test('should not enable a instrumentation if set to disabled via configuration',
     );
     expect(timingLogs.length).toBe(0);
 });
+
+test('should not enable instrumentations listed in disableInstrumentations', async ({
+    page,
+}) => {
+    const collector = createCollector(page);
+    const config = encodeURIComponent(
+        JSON.stringify({
+            disableInstrumentations: ['resource-timing'],
+        })
+    );
+    await page.goto(`/fixtures/use-navigation-timing.html?config=${config}`);
+
+    const logs = await collector.getLogs();
+    expect(logs.length).toBeGreaterThan(0);
+
+    const timingLogs = logs.filter(
+        (l) =>
+            l.scope.name ===
+            '@opentelemetry/browser-instrumentation/resource-timing'
+    );
+    expect(timingLogs.length).toBe(0);
+});
