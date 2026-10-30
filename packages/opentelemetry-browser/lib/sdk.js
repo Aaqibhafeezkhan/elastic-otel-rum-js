@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {diag, DiagLogLevel, metrics} from '@opentelemetry/api';
+import {diag, DiagLogLevel, metrics, propagation, trace} from '@opentelemetry/api';
 import {logs} from '@opentelemetry/api-logs';
 import {startLogsSdk} from '@opentelemetry/browser-sdk/logs';
 import {startTracesSdk} from '@opentelemetry/browser-sdk/traces';
@@ -18,7 +18,6 @@ import {OTLPTraceExporter} from '@opentelemetry/exporter-trace-otlp-http';
 import {BatchLogRecordProcessor} from '@opentelemetry/sdk-logs';
 import {OTLPLogExporter} from '@opentelemetry/exporter-logs-otlp-http';
 
-import {registerInstrumentations} from '@opentelemetry/instrumentation';
 import {NavigationInstrumentation} from '@opentelemetry/browser-instrumentation/experimental/navigation';
 import {NavigationTimingInstrumentation} from '@opentelemetry/browser-instrumentation/experimental/navigation-timing';
 import {ResourceTimingInstrumentation} from '@opentelemetry/browser-instrumentation/experimental/resource-timing';
@@ -71,6 +70,7 @@ import {EDOT_VERSION} from './version.js';
  * Configuration properties that are only in EDOT
  * @typedef {Object} EdotConfig
  * @property {Partial<InstrumentationsConfigMap>} [instrumentations]
+ * @property {Array<keyof InstrumentationsConfigMap>} [disableInstrumentations]
  * @property {import('./session.js').SessionConfig} [session]
  */
 /**
@@ -116,6 +116,22 @@ export function startBrowserSdk(cfg = {}) {
     const logLevel = cfg.logLevel ?? defaultConfig.logLevel;
     diag.setLogger(createLogger({logLevel}), {logLevel: DiagLogLevel.ALL});
     diag.debug(`Browser SDK intialization`, cfg);
+
+    const legacyInstrumentationConfig = Object.values(
+        cfg.instrumentations ?? {}
+    ).some(
+        (instrumentationConfig) =>
+            instrumentationConfig &&
+            Object.prototype.hasOwnProperty.call(
+                instrumentationConfig,
+                'enabled'
+            )
+    );
+    if (legacyInstrumentationConfig) {
+        diag.warn(
+            'The "enabled" instrumentation configuration option is deprecated and will be removed in a future release. Use "disableInstrumentations" instead.'
+        );
+    }
 
     const {serviceName, serviceVersion} = cfg;
     const config = {...defaultConfig, ...cfg};
@@ -259,29 +275,38 @@ export function startBrowserSdk(cfg = {}) {
         'web-vitals': (cfg) => new WebVitalsInstrumentation(cfg),
     };
 
+    /** @type {Record<string, any>} */
     const instrumentations = config.instrumentations || {};
+    const disabledInstrumentations = new Set(
+        config.disableInstrumentations ?? []
+    );
 
     /** @type {Array<keyof InstrumentationsConfigMap>} */
     // @ts-expect-error - the object defined above only has the allowed keys
     const instrKeys = Object.keys(instrFactories);
 
     // Create all instrumentations
-    /** @type {Array<import('@opentelemetry/instrumentation').Instrumentation>} */
     const instrumentationInstances = instrKeys.map((key) => {
-        const config = instrumentations[key];
-        return instrFactories[key](config);
-    });
-    // register them (which enables all performing any required patching)
-    const disableInstrumentations = registerInstrumentations({
-        instrumentations: instrumentationInstances,
+        const instrumentationConfig = instrumentations[key];
+        return instrFactories[key](instrumentationConfig);
     });
 
-    // Disable the ones with { enabled: false } in configuration
-    instrumentationInstances.forEach((instr) => {
-        const config = instr.getConfig();
-        if (config.enabled === false) {
-            instr.disable();
+    const instrumentationDeps = {
+        tracerProvider: trace.getTracerProvider(),
+        loggerProvider: logs.getLoggerProvider(),
+        propagator: propagation,
+    };
+
+    instrumentationInstances.forEach((instr, index) => {
+        const key = instrKeys[index];
+        const legacyConfig = instrumentations[key];
+        if (
+            disabledInstrumentations.has(key) ||
+            legacyConfig?.enabled === false
+        ) {
+            return;
         }
+        instr.enable(instrumentationDeps);
     });
 
     // Resolve the session eagerly so `session.start` is emitted on load
@@ -293,7 +318,7 @@ export function startBrowserSdk(cfg = {}) {
 
     return {
         shutdown() {
-            disableInstrumentations();
+            instrumentationInstances.forEach((instr) => instr.disable());
             return Promise.allSettled([
                 tracesSdk.shutdown(),
                 logsSdk.shutdown(),
